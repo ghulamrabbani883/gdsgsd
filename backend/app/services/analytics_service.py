@@ -1,5 +1,9 @@
 
+import copy
 import math
+import threading
+import time
+
 from collections import defaultdict
 from datetime import datetime, timedelta
 
@@ -21,6 +25,59 @@ class AnalyticsService:
         ("36-48 hours", 36, 48),
         ("48+ hours", 48, float("inf")),
     ]
+
+    def __init__(self):
+        self._report_cache = {}
+        self._cache_lock = threading.Lock()
+        self._cache_ttl_seconds = 300
+
+    # --------------------------------------------------
+    # Cached analytics report
+    # --------------------------------------------------
+
+    def get_accuracy_report(
+        self,
+        db: Session,
+        start: datetime,
+        end: datetime
+    ) -> dict:
+
+        cache_key = (start, end)
+
+        with self._cache_lock:
+
+            now = time.monotonic()
+
+            cached = self._report_cache.get(cache_key)
+
+            if cached is not None:
+
+                cached_time, cached_report = cached
+
+                if now - cached_time < self._cache_ttl_seconds:
+                    return copy.deepcopy(cached_report)
+
+                # Remove expired entry
+                self._report_cache.pop(cache_key, None)
+
+            # Only one thread calculates a report for this
+            # service instance at a time.
+            report = self._build_accuracy_report(
+                db,
+                start,
+                end
+            )
+
+            self._report_cache[cache_key] = (
+                time.monotonic(),
+                report
+            )
+
+            return copy.deepcopy(report)
+
+    # --------------------------------------------------
+    # Calculate forecast accuracy metrics
+    # --------------------------------------------------
 
     @staticmethod
     def _calculate_metrics(pairs: list) -> dict:
@@ -92,6 +149,10 @@ class AnalyticsService:
             ),
         }
 
+    # --------------------------------------------------
+    # Aggregate half-hour actuals into hourly actuals
+    # --------------------------------------------------
+
     @staticmethod
     def _aggregate_actuals(
         db: Session,
@@ -145,6 +206,10 @@ class AnalyticsService:
 
         return hourly_actuals
 
+    # --------------------------------------------------
+    # Match forecasts with actual generation
+    # --------------------------------------------------
+
     @staticmethod
     def _build_pairs(
         forecasts: list,
@@ -175,7 +240,11 @@ class AnalyticsService:
 
         return pairs
 
-    def get_accuracy_report(
+    # --------------------------------------------------
+    # Build complete analytics report
+    # --------------------------------------------------
+
+    def _build_accuracy_report(
         self,
         db: Session,
         start: datetime,
@@ -210,7 +279,7 @@ class AnalyticsService:
         )
 
         # --------------------------------------------------
-        # 3. Fetch only genuine pre-delivery forecast vintages
+        # 3. Fetch genuine pre-delivery forecast vintages
         # --------------------------------------------------
 
         all_forecasts = (
@@ -342,8 +411,8 @@ class AnalyticsService:
 
             metrics = self._calculate_metrics(pairs)
 
-            # This is a count of forecast-vintage/actual
-            # observations, not unique delivery intervals.
+            # Count of forecast-vintage/actual observations,
+            # not unique delivery intervals.
             forecast_observations = metrics.pop(
                 "matched_periods"
             )
