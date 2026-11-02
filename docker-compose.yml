@@ -1,0 +1,67 @@
+
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: elexon-postgres
+
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: elexon_db
+
+    ports:
+      - "5432:5432"
+
+    volumes:
+      - elexon_postgres_data:/var/lib/postgresql/data
+
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d elexon_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+    restart: unless-stopped
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+
+    container_name: elexon-backend
+
+    environment:
+      APP_NAME: "Elexon Wind Intelligence"
+      APP_ENV: development
+      API_PREFIX: /api
+
+      DATABASE_URL: postgresql+psycopg://postgres:postgres@db:5432/elexon_db
+
+      ELEXON_API_BASE_URL: https://data.elexon.co.uk/bmrs/api/v1
+
+      DECISION_CUTOFF_HOUR: 12
+      HTTP_TIMEOUT_SECONDS: 60
+
+      CORS_ORIGINS: http://localhost:5173,http://localhost:3000
+
+    ports:
+      - "8000:8000"
+
+    depends_on:
+      db:
+        condition: service_healthy
+
+    command:
+      - sh
+      - -c
+      - >
+        python -c "from app.database.db import Base, engine;
+        import app.models;
+        Base.metadata.create_all(bind=engine)"
+        &&
+        uvicorn app.main:app --host 0.0.0.0 --port 8000
+
+    restart: unless-stopped
+
+volumes:
+  elexon_postgres_data:
