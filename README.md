@@ -2,9 +2,9 @@
 
 A full-stack wind generation forecasting and accuracy analytics platform built using React, TypeScript, Python, FastAPI, PostgreSQL and Docker.
 
-**Live Application:** `https://YOUR-VERCEL-URL.vercel.app`  
-**Backend API:** `https://YOUR-RENDER-BACKEND.onrender.com`  
-**API Documentation:** `https://YOUR-RENDER-BACKEND.onrender.com/docs`
+**Live Application:** `https://gdsgsd-five.vercel.app/`  
+**Backend API:** `https://elexon-wind-api-3eii.onrender.com/`  
+**API Documentation:** `https://elexon-wind-api-3eii.onrender.com/docs`
 
 ---
 
@@ -334,7 +334,7 @@ Elexon/
 
 Interactive API documentation is available at:
 
-`https://YOUR-RENDER-BACKEND.onrender.com/docs`
+`https://elexon-wind-api-3eii.onrender.com/docs`
 
 ---
 
@@ -350,7 +350,7 @@ Interactive API documentation is available at:
 ### Clone the repository
 
 ```bash
-git clone YOUR_GITHUB_REPOSITORY_URL
+git clone https://github.com/ghulamrabbani883/gdsgsd
 cd Elexon
 ```
 
@@ -482,11 +482,11 @@ The application is deployed using:
 
 Live application:
 
-`https://YOUR-VERCEL-URL.vercel.app`
+`https://gdsgsd-five.vercel.app`
 
 Backend:
 
-`https://YOUR-RENDER-BACKEND.onrender.com`
+`https://elexon-wind-api-3eii.onrender.com`
 
 ---
 
